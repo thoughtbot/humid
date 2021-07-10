@@ -1,0 +1,3 @@
+setHumidRenderer(function() {
+  return arguments
+})

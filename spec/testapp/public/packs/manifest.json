@@ -1,0 +1,54 @@
+{
+  "application.js": "/packs/js/application-0bd789c217de6d82701f.js",
+  "application.js.map": "/packs/js/application-0bd789c217de6d82701f.js.map",
+  "args.js": "/packs/js/args-5964adc5b9e5a20e7b76.js",
+  "args.js.map": "/packs/js/args-5964adc5b9e5a20e7b76.js.map",
+  "components/error-causing-component.js": "/packs/js/components/error-causing-component-d1fc25c47b02f44376b6.js",
+  "components/error-causing-component.js.map": "/packs/js/components/error-causing-component-d1fc25c47b02f44376b6.js.map",
+  "entrypoints": {
+    "application": {
+      "js": [
+        "/packs/js/application-0bd789c217de6d82701f.js"
+      ],
+      "js.map": [
+        "/packs/js/application-0bd789c217de6d82701f.js.map"
+      ]
+    },
+    "args": {
+      "js": [
+        "/packs/js/args-5964adc5b9e5a20e7b76.js"
+      ],
+      "js.map": [
+        "/packs/js/args-5964adc5b9e5a20e7b76.js.map"
+      ]
+    },
+    "components/error-causing-component": {
+      "js": [
+        "/packs/js/components/error-causing-component-d1fc25c47b02f44376b6.js"
+      ],
+      "js.map": [
+        "/packs/js/components/error-causing-component-d1fc25c47b02f44376b6.js.map"
+      ]
+    },
+    "reporting": {
+      "js": [
+        "/packs/js/reporting-f0df5174f19f2f06d809.js"
+      ],
+      "js.map": [
+        "/packs/js/reporting-f0df5174f19f2f06d809.js.map"
+      ]
+    },
+    "simple": {
+      "js": [
+        "/packs/js/simple-53a9f717b0359383a97c.js"
+      ],
+      "js.map": [
+        "/packs/js/simple-53a9f717b0359383a97c.js.map"
+      ]
+    }
+  },
+  "reporting.js": "/packs/js/reporting-f0df5174f19f2f06d809.js",
+  "reporting.js.map": "/packs/js/reporting-f0df5174f19f2f06d809.js.map",
+  "simple.js": "/packs/js/simple-53a9f717b0359383a97c.js",
+  "simple.js.map": "/packs/js/simple-53a9f717b0359383a97c.js.map"
+}
