@@ -1,10 +1,11 @@
 # Humid
-
-Humid is a lightweight helper that leans on [mini_racer] and [webpacker] to
-generate Server Side Rendered (SSR) pages from your javascript application.
-
 [![Build
 Status](https://circleci.com/gh/thoughtbot/humid.svg?style=shield)](https://circleci.com/gh/thoughtbot/humid)
+
+Humid is a lightweight wrapper around [mini_racer] and [webpacker] used to
+generate Server Side Rendered (SSR) pages from your javascript application.
+While it was built for React, it can work with any JS function that returns a
+HTML string.
 
 ## Caution
 
@@ -72,6 +73,8 @@ require("source-map-support").install({
 
 ## The mini_racer environment.
 
+### Functions not available
+
 The following functions are **not** available in the mini_racer environment
 
 - `setTimeout`
@@ -91,6 +94,8 @@ You may need webpacker to create aliases for server friendly libraries that can
 not detect the `mini_racer` environment.
 
 ```diff
+ // config/webpack/development.js
+
  process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
  const environment = require('./environment')
@@ -134,6 +139,12 @@ And finally call `render` from ERB.
 
 ```ruby
 <%= Humid.render(initial_state) %>
+```
+
+Instrumentation is included:
+
+```
+Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms)
 ```
 
 ### Puma
