@@ -37,7 +37,7 @@ workflows:
           matrix:
             parameters:
               gemfile:
-                - Gemfile.webpacker54
-                - Gemfile.webpacker43
+                - Gemfile.webpacker5
+                - Gemfile.webpacker4
               ruby-version:
                 - ruby27
