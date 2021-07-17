@@ -15,10 +15,10 @@ Gem::Specification.new do |s|
 
   s.add_dependency "webpacker", ">= 4.0"
   s.add_dependency "mini_racer", ">= 0.4"
-  s.add_dependency "activesupport", ">= 6.1"
+  s.add_dependency "activesupport", ">= 6.0"
 
   s.add_development_dependency "rake", " ~> 12.0"
   s.add_development_dependency "rspec", " ~> 3.8"
   s.add_development_dependency "byebug", "~> 9.0"
-  s.add_development_dependency "rails", ">= 6.1"
+  s.add_development_dependency "rails", ">= 6.0"
 end
