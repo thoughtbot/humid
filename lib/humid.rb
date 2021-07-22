@@ -11,6 +11,9 @@ module Humid
   extend self
   include ActiveSupport::Configurable
 
+  class RenderError < StandardError
+  end
+
   config_accessor :server_rendering_file do
     "server_rendering.js"
   end
@@ -102,7 +105,10 @@ module Humid
 
   def render(*args)
     ActiveSupport::Notifications.instrument("render.humid") do
-      @@context.call("__renderer", *args)
+      context.call("__renderer", *args)
+    rescue MiniRacer::RuntimeError => e
+      message = ([e.message] + e.backtrace.filter {|x| x.starts_with? "JavaScript"}).join("\n")
+      raise Humid::RenderError.new(message)
     end
   end
 end

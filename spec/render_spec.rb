@@ -126,11 +126,12 @@ RSpec.describe "Humid" do
       expect {
         Humid.render
       }.to raise_error { |error|
-        expect(error).to be_a(MiniRacer::RuntimeError)
-        expect(error.message).to eql("Error: ^^ Look! These stack traces map to the actual source code :)")
-        expect(error.backtrace[0]).to eql("JavaScript at throwSomeError (/webpack:/app/javascript/packs/components/error-causing-component.js:2:1)")
-        expect(error.backtrace[1]).to eql("JavaScript at ErrorCausingComponent (/webpack:/app/javascript/packs/components/error-causing-component.js:8:1)")
-        expect(error.backtrace[2]).to eql("JavaScript at /webpack:/app/javascript/packs/reporting.js:18:1")
+        expect(error).to be_a(Humid::RenderError)
+        message = error.message.split("\n")
+        expect(message[0]).to eql("Error: ^^ Look! These stack traces map to the actual source code :)")
+        expect(message[1]).to eql("JavaScript at throwSomeError (/webpack:/app/javascript/packs/components/error-causing-component.js:2:1)")
+        expect(message[2]).to eql("JavaScript at ErrorCausingComponent (/webpack:/app/javascript/packs/components/error-causing-component.js:8:1)")
+        expect(message[3]).to eql("JavaScript at /webpack:/app/javascript/packs/reporting.js:18:1")
       }
     end
   end
