@@ -38,6 +38,14 @@
         "/packs/js/reporting-f0df5174f19f2f06d809.js.map"
       ]
     },
+    "simple_changed": {
+      "js": [
+        "/packs/js/simple_changed-a73f8ce0d68778d13e0c.js"
+      ],
+      "js.map": [
+        "/packs/js/simple_changed-a73f8ce0d68778d13e0c.js.map"
+      ]
+    },
     "simple": {
       "js": [
         "/packs/js/simple-53a9f717b0359383a97c.js"
@@ -50,5 +58,7 @@
   "reporting.js": "/packs/js/reporting-f0df5174f19f2f06d809.js",
   "reporting.js.map": "/packs/js/reporting-f0df5174f19f2f06d809.js.map",
   "simple.js": "/packs/js/simple-53a9f717b0359383a97c.js",
-  "simple.js.map": "/packs/js/simple-53a9f717b0359383a97c.js.map"
+  "simple.js.map": "/packs/js/simple-53a9f717b0359383a97c.js.map",
+  "simple_changed.js": "/packs/js/simple_changed-a73f8ce0d68778d13e0c.js",
+  "simple_changed.js.map": "/packs/js/simple_changed-a73f8ce0d68778d13e0c.js.map"
 }

@@ -79,8 +79,8 @@ RSpec.describe "Humid" do
       end
     end
 
-    context "when the js is stale and env is development" do
-      it "compiles the JS" do
+    context "when the env is development" do
+      it "compiles the JS when stale" do
         allow(Webpacker).to receive_message_chain("env.development?") { true }
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
         allow(Webpacker).to receive_message_chain("compiler.compile")
@@ -91,11 +91,35 @@ RSpec.describe "Humid" do
         expect(prev_context).to be_kind_of(MiniRacer::Context)
 
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
+        # This simulates a changing file
+        allow(Humid.config).to receive("server_rendering_file") { "simple_changed.js" }
 
         next_context = Humid.context
 
         expect(prev_context).to_not eql(next_context)
         expect(next_context).to be_kind_of(MiniRacer::Context)
+      end
+
+      it "creates a new context when webpack-devserver already handled JS staleness" do
+        allow(Webpacker).to receive_message_chain("env.development?") { true }
+        allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
+        allow(Webpacker).to receive_message_chain("compiler.compile")
+        allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+
+        Humid.create_context
+        prev_context = Humid.context
+        expect(Humid.render).to eql("hello")
+        expect(prev_context).to be_kind_of(MiniRacer::Context)
+
+        allow(Webpacker).to receive_message_chain("compiler.stale?") { false }
+        # This simulates a changing file
+        allow(Humid.config).to receive("server_rendering_file") { "simple_changed.js" }
+
+        next_context = Humid.context
+
+        expect(prev_context).to_not eql(next_context)
+        expect(next_context).to be_kind_of(MiniRacer::Context)
+        expect(Humid.render).to eql("hello changed")
       end
     end
   end

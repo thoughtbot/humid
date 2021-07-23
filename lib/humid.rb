@@ -57,14 +57,28 @@ module Humid
     JS
   end
 
-  def context
-    if @@context && Webpacker.env.development? && Webpacker.compiler.stale?
+  def handle_stale_files
+    if Webpacker.compiler.stale?
       Webpacker.compiler.compile
+    end
+
+    public_path = Webpacker.config.public_path
+    server_rendering_file = config.server_rendering_file
+    source_path = public_path.join(Webpacker.manifest.lookup(server_rendering_file)[1..-1])
+    filename = File.basename(source_path.to_s)
+
+    if @@current_filename != filename
       dispose
       create_context
-    else
-      @@context
     end
+  end
+
+  def context
+    if @@context && Webpacker.env.development?
+      handle_stale_files
+    end
+
+    @@context
   end
 
   def dispose
@@ -94,6 +108,7 @@ module Humid
     map_path = public_path.join(Webpacker.manifest.lookup(server_rendering_map)[1..-1])
 
     filename = File.basename(source_path.to_s)
+    @@current_filename = filename
     ctx.eval(File.read(source_path), filename: filename)
 
     if config.use_source_map
