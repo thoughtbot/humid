@@ -103,14 +103,13 @@ module Humid
 
     source_path = public_path.join(Webpacker.manifest.lookup(server_rendering_file)[1..-1])
     map_path = public_path.join(Webpacker.manifest.lookup(server_rendering_map)[1..-1])
+    if config.use_source_map
+      ctx.attach("readSourceMap", proc { File.read(map_path) })
+    end
 
     filename = File.basename(source_path.to_s)
     @@current_filename = filename
     ctx.eval(File.read(source_path), filename: filename)
-
-    if config.use_source_map
-      ctx.attach("readSourceMap", proc { File.read(map_path) })
-    end
 
     @@context = ctx
   end
