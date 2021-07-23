@@ -46,10 +46,12 @@ Humid.configure do |config|
   config.logger = Rails.logger
 
   # context_options. Options passed to mini_racer. Defaults to
-  # config.context_options = {
-  #   timeout: 1000,
-  #   ensure_gc_after_idle: 2000
-  # }
+  # empty.
+  # config.context_options = {}
+  config.context_options = {
+    timeout: 1000,
+    ensure_gc_after_idle: 2000
+  }
 end
 
 # If using puma in single mode

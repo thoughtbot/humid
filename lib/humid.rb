@@ -27,10 +27,7 @@ module Humid
   end
 
   config_accessor :context_options do
-    {
-      timeout: 1000,
-      ensure_gc_after_idle: 2000
-    }
+    {}
   end
 
   def remove_functions
