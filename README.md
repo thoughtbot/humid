@@ -54,7 +54,11 @@ Humid.configure do |config|
   }
 end
 
-# If using puma in single mode
+# Common development options
+# You may need to use single_threaded mode with Spring
+# MiniRacer::Platform.set_flags! :single_threaded
+#
+# If you're using Puma in single mode:
 # Humid.create_context
 ```
 
