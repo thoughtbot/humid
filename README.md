@@ -55,11 +55,13 @@ Humid.configure do |config|
 end
 
 # Common development options
-# You may need to use single_threaded mode with Spring
-# MiniRacer::Platform.set_flags! :single_threaded
-#
-# If you're using Puma in single mode:
-# Humid.create_context
+if Rails.env.development?
+  # Use single_threaded mode for Spring and other forked envs.
+  MiniRacer::Platform.set_flags! :single_threaded
+
+  # If you're using Puma in single mode:
+  Humid.create_context
+end
 ```
 
 If you'd like support for source map support, you will need to
