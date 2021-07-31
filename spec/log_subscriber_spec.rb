@@ -45,7 +45,7 @@ RSpec.describe Humid::LogSubscriber do
   end
 
   it "is attached" do
-    allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+    allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
     Humid.create_context
     expect(Humid::LogSubscriber.runtime).to eql(0)
     Humid.render

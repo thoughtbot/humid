@@ -34,20 +34,33 @@ Add an initializer to configure
 
 ```ruby
 Humid.configure do |config|
-  # name of your webpacker pack. Defaults to "server_rendering.js"
-  config.server_rendering_source = "server_rendering.js"
+  # Name of your webpacker pack file located in `app/javascript/packs/`. You
+  # should use a separate pack from your `application.js`.
+  #
+  # Defaults to "server_rendering.js"
+  config.server_rendering_pack = "server_rendering.js"
 
-  # name of your webpacker pack source map. Defaults to `false`
+  # Name of your webpacker pack source map.
+  #
+  # Defaults to `false`
   config.use_source_map = true
 
-  # The logger instance. Defaults to `Logger.new(STDOUT)`
+  # Raise errors if JS rendering failed. If false, the error will be
+  # logged out to Rails log and Humid.render will return an empty string
+  #
+  # Defaults to true.
+  config.raise_render_errors = Rails.env.development? || Rails.env.test?
+
+  # The logger instance.
   # `console.log` and friends (`warn`, `error`) are delegated to
   # the respective logger levels on the ruby side.
+  #
+  # Defaults to `Logger.new(STDOUT)`
   config.logger = Rails.logger
 
-  # context_options. Options passed to mini_racer. Defaults to
-  # empty.
-  # config.context_options = {}
+  # Options passed to mini_racer.
+  #
+  # Defaults to empty `{}`.
   config.context_options = {
     timeout: 1000,
     ensure_gc_after_idle: 2000
@@ -55,7 +68,7 @@ Humid.configure do |config|
 end
 
 # Common development options
-if Rails.env.development?
+if Rails.env.development? || Rails.env.test?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
 
@@ -97,46 +110,16 @@ The following functions are **not** available in the mini_racer environment
 `console.log` and friends (`info`, `error`, `warn`) are delegated to the
 respective methods on the configured logger.
 
-### Webpacker
-You may need webpacker to create aliases for server friendly libraries that can
-not detect the `mini_racer` environment.
-
-```diff
- // config/webpack/development.js
-
- process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
- const environment = require('./environment')
-+const path = require('path')
-+const ConfigObject = require('@rails/webpacker/package/config_types/config
-
--module.exports = environment.toWebpackConfig()
-+const webConfig = environment.toWebpackConfig()
-+const ssrConfig = new ConfigObject(webConfig.toObject())
-+
-+ssrConfig.delete('entry')
-+ssrConfig.merge({
-+  entry: {
-+    server_rendering: webConfig.entry.server_rendering
-+  },
-+  resolve: {
-+    alias: {
-+      'html-dom-parser': path.resolve(__dirname, '../../node_modules/html-dom-parser/lib/html-to-dom-server')
-+    }
-+  }
-+})
-+
-+delete webConfig.entry.server_rendering
-+module.exports = [ssrConfig, webConfig]
-```
-
 ## Usage
 
 Pass your HTML render function to `setHumidRenderer`
 
 ```javascript
+// Set a factory function that will create a new instance of our app
+// for each request.
 setHumidRenderer((json) => {
   const initialState = JSON.parse(json)
+
   return ReactDOMServer.renderToString(
     <Application initialPage={initialState}/>
   )
@@ -171,6 +154,69 @@ on_worker_shutdown do
 end
 ```
 
+### Server-side libraries that detect node.js envs.
+You may need webpacker to create aliases for server friendly libraries that can
+not detect the `mini_racer` environment.
+
+```diff
+ // config/webpack/production.js
+ // config/webpack/development.js
+ // config/webpack/test.js
+
+ process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+
+ const environment = require('./environment')
++const path = require('path')
++const ConfigObject = require('@rails/webpacker/package/config_types/config
+
+-module.exports = environment.toWebpackConfig()
++const webConfig = environment.toWebpackConfig()
++const ssrConfig = new ConfigObject(webConfig.toObject())
++
++ssrConfig.delete('entry')
++ssrConfig.merge({
++  entry: {
++    server_rendering: webConfig.entry.server_rendering
++  },
++  resolve: {
++    alias: {
++      'html-dom-parser': path.resolve(__dirname, '../../node_modules/html-dom-parser/lib/html-to-dom-server')
++    }
++  }
++})
++
++delete webConfig.entry.server_rendering
++module.exports = [ssrConfig, webConfig]
+```
+
+## Writing universal code
+[Vue has an amazing resource][vue_ssr] on how to write universal code. Below
+are a few highlights that are important to keep in mind.
+
+### State
+
+Humid uses a single context across multiple request. To avoid state pollution, we
+provide a factory function to `setHumidRenderer` that builds a new app instance on
+every call.
+
+This provides better isolation, but as it is still a shared context, polluting
+`global` is still possible. Be careful of modifying `global` in your code.
+
+### Polyfills
+
+Polyfills will fail when using in the `mini_racer` environment because of missing
+browser APIs. Account for this by moving the `require` to `componentDidMount`
+in your component.
+
+```
+componentDidMount() {
+  const dialogPolyfill = require('dialog-polyfill').default
+  dialogPolyfill.registerDialog(this.dialog.current)
+  this.dialog.current.open = this.props.open
+  this.dialog.current.showModal()
+}
+```
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](/CONTRIBUTING.md).
@@ -196,3 +242,4 @@ See [our other projects][community] or
 [hire]: https://thoughtbot.com?utm_source=github
 [mini_racer]: https://github.com/rubyjs/mini_racer
 [webpacker]: https://github.com/rails/webpacker
+[vue_ssr]: https://ssr.vuejs.org/

@@ -14,14 +14,24 @@ RSpec.describe "Humid" do
     end
 
     it "creates a context with initial js" do
-      allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
       Humid.create_context
 
       expect(Humid.context).to be_kind_of(MiniRacer::Context)
     end
 
+    context "When the file can not be found" do
+      it "raises" do
+        allow(Humid.config).to receive("server_rendering_pack") { "does_not_exist.js" }
+
+        expect {
+          Humid.create_context
+        }.to raise_error(Humid::FileNotFound, "Humid could not find a built pack for does_not_exist.js")
+      end
+    end
+
     it "does not have timeouts, immediates, and intervals" do
-      allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
 
       Humid.create_context
 
@@ -43,7 +53,7 @@ RSpec.describe "Humid" do
     end
 
     it "proxies to Rails logger" do
-      allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
       Humid.create_context
       expect(Humid.logger).to receive(:info).with("hello")
 
@@ -53,7 +63,7 @@ RSpec.describe "Humid" do
 
   describe "context" do
     it "returns the created context" do
-      allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
 
       Humid.create_context
 
@@ -64,7 +74,7 @@ RSpec.describe "Humid" do
       it "does not recompile the JS" do
         allow(Webpacker).to receive_message_chain("env.development?") { false }
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
-        allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+        allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
 
         Humid.create_context
         prev_context = Humid.context
@@ -84,7 +94,7 @@ RSpec.describe "Humid" do
         allow(Webpacker).to receive_message_chain("env.development?") { true }
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
         allow(Webpacker).to receive_message_chain("compiler.compile")
-        allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+        allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
 
         Humid.create_context
         prev_context = Humid.context
@@ -92,7 +102,7 @@ RSpec.describe "Humid" do
 
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
         # This simulates a changing file
-        allow(Humid.config).to receive("server_rendering_file") { "simple_changed.js" }
+        allow(Humid.config).to receive("server_rendering_pack") { "simple_changed.js" }
 
         next_context = Humid.context
 
@@ -104,7 +114,7 @@ RSpec.describe "Humid" do
         allow(Webpacker).to receive_message_chain("env.development?") { true }
         allow(Webpacker).to receive_message_chain("compiler.stale?") { true }
         allow(Webpacker).to receive_message_chain("compiler.compile")
-        allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+        allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
 
         Humid.create_context
         prev_context = Humid.context
@@ -113,7 +123,7 @@ RSpec.describe "Humid" do
 
         allow(Webpacker).to receive_message_chain("compiler.stale?") { false }
         # This simulates a changing file
-        allow(Humid.config).to receive("server_rendering_file") { "simple_changed.js" }
+        allow(Humid.config).to receive("server_rendering_pack") { "simple_changed.js" }
 
         next_context = Humid.context
 
@@ -126,14 +136,14 @@ RSpec.describe "Humid" do
 
   describe "render" do
     it "returns a js output" do
-      allow(Humid.config).to receive("server_rendering_file") { "simple.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "simple.js" }
       Humid.create_context
 
       expect(Humid.render).to eql("hello")
     end
 
     it "applys args to the func" do
-      allow(Humid.config).to receive("server_rendering_file") { "args.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "args.js" }
       Humid.create_context
 
       args = ["a", 1, 2, [], {}]
@@ -142,7 +152,7 @@ RSpec.describe "Humid" do
     end
 
     it "can use source maps to see errors" do
-      allow(Humid.config).to receive("server_rendering_file") { "reporting.js" }
+      allow(Humid.config).to receive("server_rendering_pack") { "reporting.js" }
       allow(Humid.config).to receive("use_source_map") { true }
 
       Humid.create_context
@@ -151,12 +161,28 @@ RSpec.describe "Humid" do
         Humid.render
       }.to raise_error { |error|
         expect(error).to be_a(Humid::RenderError)
-        message = error.message.split("\n")
-        expect(message[0]).to eql("Error: ^^ Look! These stack traces map to the actual source code :)")
-        expect(message[1]).to eql("JavaScript at throwSomeError (/webpack:/app/javascript/packs/components/error-causing-component.js:2:1)")
-        expect(message[2]).to eql("JavaScript at ErrorCausingComponent (/webpack:/app/javascript/packs/components/error-causing-component.js:8:1)")
-        expect(message[3]).to eql("JavaScript at /webpack:/app/javascript/packs/reporting.js:18:1")
+        message = <<~MSG
+          Error: ^^ Look! These stack traces map to the actual source code :)
+          JavaScript at throwSomeError (/webpack:/app/javascript/packs/components/error-causing-component.js:2:1)
+          JavaScript at ErrorCausingComponent (/webpack:/app/javascript/packs/components/error-causing-component.js:8:1)
+          JavaScript at /webpack:/app/javascript/packs/reporting.js:18:1
+        MSG
+
+        expect(error.message).to eql message.strip
       }
+    end
+
+    it "siliences render errors to the log" do
+      allow(Humid.config).to receive("server_rendering_pack") { "reporting.js" }
+      allow(Humid.config).to receive("raise_render_errors") { false }
+      allow(Humid.config).to receive("use_source_map") { true }
+
+      Humid.create_context
+
+      expect(Humid.logger).to receive(:error)
+      output = Humid.render
+
+      expect(output).to eql("")
     end
   end
 end

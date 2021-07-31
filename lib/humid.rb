@@ -14,12 +14,21 @@ module Humid
   class RenderError < StandardError
   end
 
-  config_accessor :server_rendering_file do
+  class FileNotFound < StandardError
+  end
+
+  @@context = nil
+
+  config_accessor :server_rendering_pack do
     "server_rendering.js"
   end
 
   config_accessor :use_source_map do
     false
+  end
+
+  config_accessor :raise_render_errors do
+    true
   end
 
   config_accessor :logger do
@@ -60,8 +69,8 @@ module Humid
     end
 
     public_path = Webpacker.config.public_path
-    server_rendering_file = config.server_rendering_file
-    source_path = public_path.join(Webpacker.manifest.lookup(server_rendering_file)[1..-1])
+    server_rendering_pack = config.server_rendering_pack
+    source_path = public_path.join(Webpacker.manifest.lookup(server_rendering_pack)[1..-1])
     filename = File.basename(source_path.to_s)
 
     if @@current_filename != filename
@@ -98,15 +107,19 @@ module Humid
     ctx.eval(js)
 
     public_path = Webpacker.config.public_path
-    server_rendering_file = config.server_rendering_file
-    server_rendering_map = "#{config.server_rendering_file}.map"
 
-    source_path = public_path.join(Webpacker.manifest.lookup(server_rendering_file)[1..-1])
-    map_path = public_path.join(Webpacker.manifest.lookup(server_rendering_map)[1..-1])
+    webpack_source_file = Webpacker.manifest.lookup(config.server_rendering_pack)
+    if webpack_source_file.nil?
+      raise FileNotFound.new("Humid could not find a built pack for #{config.server_rendering_pack}")
+    end
+
     if config.use_source_map
+      webpack_source_map = Webpacker.manifest.lookup("#{config.server_rendering_pack}.map")
+      map_path = public_path.join(webpack_source_map[1..-1])
       ctx.attach("readSourceMap", proc { File.read(map_path) })
     end
 
+    source_path = public_path.join(webpack_source_file[1..-1])
     filename = File.basename(source_path.to_s)
     @@current_filename = filename
     ctx.eval(File.read(source_path), filename: filename)
@@ -119,7 +132,14 @@ module Humid
       context.call("__renderer", *args)
     rescue MiniRacer::RuntimeError => e
       message = ([e.message] + e.backtrace.filter {|x| x.starts_with? "JavaScript"}).join("\n")
-      raise Humid::RenderError.new(message)
+      render_error = Humid::RenderError.new(message)
+
+      if config.raise_render_errors
+        raise render_error
+      else
+        config.logger.error(render_error.inspect)
+        ""
+      end
     end
   end
 end
