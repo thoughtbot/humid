@@ -33,7 +33,7 @@ describe Humid::ControllerRuntime do
     include controller_runtime
 
     def logger
-      Logger.new(STDOUT)
+      Logger.new($stdout)
     end
   end
 

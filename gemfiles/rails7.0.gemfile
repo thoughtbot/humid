@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gemspec
+gemspec name: "humid", path: "../"
 
 gem "rake"
 gem "rspec"
