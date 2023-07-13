@@ -1,6 +1,6 @@
 # Humid
 
-![Build Status](https://github.com/github/docs/actions/workflows/build.yml/badge.svg?branch=main)
+![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
 Humid is a lightweight wrapper around [mini_racer] used to generate Server
 Side Rendered (SSR) pages from your js-bundling builds. While it was built
