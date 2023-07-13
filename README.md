@@ -35,12 +35,14 @@ Add an initializer to configure
 Humid.configure do |config|
   # Path to your build file located in `app/assets/build/`. You should use a
   # separate build apart from your `application.js`.
+  #
   # Required
-  config.application_path = "app/assets/build/server_rendering.js"
+  config.application_path = Rails.root.join('app', 'assets', 'build', 'server_rendering.js')
 
   # Path to your source map file
+  #
   # Optional
-  config.source_map_path = "app/assets/build/server_rendering.js.map"
+  config.source_map_path = Rails.root.join('app', 'assets', 'build', 'server_rendering.js.map')
 
   # Raise errors if JS rendering failed. If false, the error will be
   # logged out to Rails log and Humid.render will return an empty string
@@ -110,7 +112,7 @@ respective methods on the configured logger.
 
 ## Usage
 
-In your entry file, e.g, `server_rendering.js`, pass your HTML render function 
+In your entry file, e.g, `server_rendering.js`, pass your HTML render function
 to `setHumidRenderer`. There is no need to require the function.
 
 ```javascript
