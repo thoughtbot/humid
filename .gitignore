@@ -2,5 +2,7 @@
 Gemfile.lock
 node_modules/
 tmp/
+spec/testapp/app/assets/builds/*
+.tool-versions
 log/
 *.gem

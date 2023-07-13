@@ -1,11 +1,10 @@
 # Humid
-[![Build
-Status](https://circleci.com/gh/thoughtbot/humid.svg?style=shield)](https://circleci.com/gh/thoughtbot/humid)
 
-Humid is a lightweight wrapper around [mini_racer] and [webpacker] used to
-generate Server Side Rendered (SSR) pages from your javascript application.
-While it was built for React, it can work with any JS function that returns a
-HTML string.
+![Build Status](https://github.com/github/docs/actions/workflows/build.yml/badge.svg?branch=main)
+
+Humid is a lightweight wrapper around [mini_racer] used to generate Server
+Side Rendered (SSR) pages from your js-bundling builds. While it was built
+for React, it can work with any JS function that returns a HTML string.
 
 ## Caution
 
@@ -34,16 +33,14 @@ Add an initializer to configure
 
 ```ruby
 Humid.configure do |config|
-  # Name of your webpacker pack file located in `app/javascript/packs/`. You
-  # should use a separate pack from your `application.js`.
-  #
-  # Defaults to "server_rendering.js"
-  config.server_rendering_pack = "server_rendering.js"
+  # Path to your build file located in `app/assets/build/`. You should use a
+  # separate build apart from your `application.js`.
+  # Required
+  config.application_path = "app/assets/build/server_rendering.js"
 
-  # Name of your webpacker pack source map.
-  #
-  # Defaults to `false`
-  config.use_source_map = true
+  # Path to your source map file
+  # Optional
+  config.source_map_path = "app/assets/build/server_rendering.js.map"
 
   # Raise errors if JS rendering failed. If false, the error will be
   # logged out to Rails log and Humid.render will return an empty string
@@ -78,8 +75,8 @@ end
 ```
 
 If you'd like support for source map support, you will need to
-1. Ensure `config.use_source_map` is set to `true`
-2. Add the following to your `server_rendering.js` pack.
+1. Add the following to your entry file, e.g, `server_rendering.js`.
+2. set `config.source_map_path`.
 
 ```javascript
 require("source-map-support").install({
@@ -91,6 +88,7 @@ require("source-map-support").install({
   }
 });
 ```
+A [sample] webpack.config is available for reference.
 
 ## The mini_racer environment.
 
@@ -112,7 +110,8 @@ respective methods on the configured logger.
 
 ## Usage
 
-Pass your HTML render function to `setHumidRenderer`
+In your entry file, e.g, `server_rendering.js`, pass your HTML render function 
+to `setHumidRenderer`. There is no need to require the function.
 
 ```javascript
 // Set a factory function that will create a new instance of our app
@@ -156,41 +155,20 @@ end
 
 ### Server-side libraries that detect node.js envs.
 You may need webpacker to create aliases for server friendly libraries that can
-not detect the `mini_racer` environment.
+not detect the `mini_racer` environment. For example, in your `webpack.config.js`.
 
 ```diff
- // config/webpack/production.js
- // config/webpack/development.js
- // config/webpack/test.js
-
- process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
- const environment = require('./environment')
-+const path = require('path')
-+const ConfigObject = require('@rails/webpacker/package/config_types/config
-
--module.exports = environment.toWebpackConfig()
-+const webConfig = environment.toWebpackConfig()
-+const ssrConfig = new ConfigObject(webConfig.toObject())
-+
-+ssrConfig.delete('entry')
-+ssrConfig.merge({
-+  entry: {
-+    server_rendering: webConfig.entry.server_rendering
-+  },
-+  resolve: {
-+    alias: {
-+      'html-dom-parser': path.resolve(__dirname, '../../node_modules/html-dom-parser/lib/html-to-dom-server')
-+    }
-+  }
-+})
-+
-+delete webConfig.entry.server_rendering
-+module.exports = [ssrConfig, webConfig]
+...
+  resolve: {
+    alias: {
+      'html-dom-parser': path.resolve(__dirname, '../../node_modules/html-dom-parser/lib/html-to-dom-server')
+    }
+  }
+...
 ```
 
 ## Writing universal code
-[Vue has an amazing resource][vue_ssr] on how to write universal code. Below
+[Vue has a resource][vue_ssr] on how to write universal code. Below
 are a few highlights that are important to keep in mind.
 
 ### State
@@ -241,5 +219,5 @@ See [our other projects][community] or
 [community]: https://thoughtbot.com/community?utm_source=github
 [hire]: https://thoughtbot.com?utm_source=github
 [mini_racer]: https://github.com/rubyjs/mini_racer
-[webpacker]: https://github.com/rails/webpacker
 [vue_ssr]: https://ssr.vuejs.org/
+[sample]: ./webpack.config.js
