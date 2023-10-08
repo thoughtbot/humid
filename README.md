@@ -70,9 +70,20 @@ end
 if Rails.env.development? || Rails.env.test?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
+end
+```
 
-  # If you're using Puma in single mode:
+Then add to your `config/puma.rb`
+
+```
+workers ENV.fetch("WEB_CONCURRENCY") { 1 }
+
+on_worker_boot do
   Humid.create_context
+end
+
+on_worker_shutdown do
+  Humid.dispose
 end
 ```
 
