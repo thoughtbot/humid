@@ -17,10 +17,17 @@ RSpec.describe Humid::LogSubscriber do
     Thread.current.active_support_execution_state
   end
 
+  def key
+    if Rails.version >= "7.1"
+      "attr_humid_runtime_#{Humid::LogSubscriber.object_id}"
+    else
+      "attr_Humid::LogSubscriber_humid_runtime"
+    end
+  end
+
   context ".runtime" do
     it "is returns the runtime from the thread local" do
       expect(Humid::LogSubscriber.runtime).to eql 0
-      key = "attr_Humid::LogSubscriber_humid_runtime"
       current[key] = 3
       expect(Humid::LogSubscriber.runtime).to eql 3
     end
@@ -30,7 +37,6 @@ RSpec.describe Humid::LogSubscriber do
     it "sets the runtime in a thread-safe manner" do
       expect(Humid::LogSubscriber.runtime).to eql 0
       Humid::LogSubscriber.runtime = 3
-      key = "attr_Humid::LogSubscriber_humid_runtime"
       expect(current[key]).to eql 3
     end
   end
@@ -38,7 +44,6 @@ RSpec.describe Humid::LogSubscriber do
   context ".reset_runtime" do
     it "resets the runtime" do
       Humid::LogSubscriber.runtime = 3
-      key = "attr_Humid::LogSubscriber_humid_runtime"
       expect(current[key]).to eql 3
 
       Humid::LogSubscriber.reset_runtime

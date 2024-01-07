@@ -5,4 +5,4 @@ gemspec name: "humid", path: "../"
 gem "rake"
 gem "rspec"
 gem "byebug"
-gem 'rails', '~> 7.0.0'
+gem 'rails', '~> 7.1.0'
