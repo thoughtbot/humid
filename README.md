@@ -141,7 +141,7 @@ setHumidRenderer((json) => {
 And finally call `render` from ERB.
 
 ```ruby
-<%= Humid.render(initial_state) %>
+<%= Humid.render(initial_state).html_safe %>
 ```
 
 Instrumentation is included:
