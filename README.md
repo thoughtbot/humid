@@ -66,10 +66,12 @@ Humid.configure do |config|
   }
 end
 
-# Common development options
-if Rails.env.development? || Rails.env.test?
+# Capybara defines its own puma config which is set up to run a single puma process
+# with a thread pool. This ensures that a context gets created on that process.
+if Rails.env.test?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
+  Humid.create_context
 end
 ```
 
@@ -153,7 +155,8 @@ Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms
 ### Puma
 
 `mini_racer` is thread safe, but not fork safe. To use with web servers that
-employ forking, use `Humid.create_context` only on forked processes.
+employ forking, use `Humid.create_context` only on forked processes. On
+production, There should be no context created on the master process.
 
 ```ruby
 # Puma
@@ -168,7 +171,7 @@ end
 
 ### Server-side libraries that detect node.js envs.
 You may need webpacker to create aliases for server friendly libraries that can
-not detect the `mini_racer` environment. For example, in your `webpack.config.js`.
+not detect the `mini_racer` environment. For example, in `webpack.config.js`.
 
 ```diff
 ...
@@ -193,19 +196,17 @@ every call.
 This provides better isolation, but as it is still a shared context, polluting
 `global` is still possible. Be careful of modifying `global` in your code.
 
-### Polyfills
+### Missing browser APIs
 
-Polyfills will fail when using in the `mini_racer` environment because of missing
-browser APIs. Account for this by moving the `require` to `componentDidMount`
-in your component.
+Polyfills and some libraries that depend on browser APIs will fail in the
+`mini_racer` environment because of missing browser APIs. Account for this by
+moving the `require` to `useEffect` in your component.
 
 ```
-componentDidMount() {
-  const dialogPolyfill = require('dialog-polyfill').default
-  dialogPolyfill.registerDialog(this.dialog.current)
-  this.dialog.current.open = this.props.open
-  this.dialog.current.showModal()
-}
+  useEffect(() => {
+    const svgPanZoom = require('svg-pan-zoom')
+    //...
+  }, [])
 ```
 
 ## Contributing
