@@ -9,9 +9,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: ['3.3', '3.2', '3.1']
-        rails: ['7.0', '7.1']
-
+        ruby: ["3.3", "3.2", "3.1"]
+        rails: ["7.0", "7.1", "7.2", "8.0"]
+        exclude:
+          - ruby: 3.1
+            rails: 8.0
     runs-on: 'ubuntu-latest'
     env:
       ARUBA_TIMEOUT: 240

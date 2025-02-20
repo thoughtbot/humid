@@ -1,0 +1,8 @@
+source 'https://rubygems.org'
+
+gemspec name: "humid", path: "../"
+
+gem "rake"
+gem "rspec"
+gem "byebug"
+gem 'rails', '~> 8.0.1'
