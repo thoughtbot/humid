@@ -1,14 +1,18 @@
 require_relative "./support/helper"
 
 RSpec.describe "Humid" do
-  describe "create_context" do
+  def miniracer_context
+    MiniRacer::Context.new
+  end
+
+  describe "use_context" do
     after(:each) do
       Humid.dispose
     end
 
-    it "creates a context with initial js" do
+    it "sets a context with initial js" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect(Humid.context).to be_kind_of(MiniRacer::Context)
     end
@@ -18,7 +22,7 @@ RSpec.describe "Humid" do
         allow(Humid.config).to receive("application_path") { js_path "does_not_exist.js" }
 
         expect {
-          Humid.create_context
+          Humid.use_context(miniracer_context)
         }.to raise_error(Errno::ENOENT)
       end
     end
@@ -26,7 +30,7 @@ RSpec.describe "Humid" do
     it "does not have timeouts, immediates, and intervals" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
 
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect {
         Humid.context.eval("setTimeout()")
@@ -47,7 +51,7 @@ RSpec.describe "Humid" do
 
     it "proxies to Rails logger" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
-      Humid.create_context
+      Humid.use_context(miniracer_context)
       expect(Humid.logger).to receive(:info).with("hello")
 
       Humid.context.eval("console.info('hello')")
@@ -58,7 +62,7 @@ RSpec.describe "Humid" do
     it "returns the created context" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
 
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect(Humid.context).to be_kind_of(MiniRacer::Context)
     end
@@ -67,14 +71,14 @@ RSpec.describe "Humid" do
   describe "render" do
     it "returns a js output" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect(Humid.render).to eql("hello")
     end
 
     it "applys args to the func" do
       allow(Humid.config).to receive("application_path") { js_path "args.js" }
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       args = ["a", 1, 2, [], {}]
 
@@ -86,7 +90,7 @@ RSpec.describe "Humid" do
       allow(Humid.config).to receive("application_path") { build_path "reporting.js" }
       allow(Humid.config).to receive("source_map_path") { build_path "reporting.js.map" }
 
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect {
         Humid.render
@@ -107,7 +111,7 @@ RSpec.describe "Humid" do
       allow(Humid.config).to receive("source_map_path") { build_path "reporting.js.map" }
       allow(Humid.config).to receive("raise_render_errors") { false }
 
-      Humid.create_context
+      Humid.use_context(miniracer_context)
 
       expect(Humid.logger).to receive(:error)
       output = Humid.render

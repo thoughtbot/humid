@@ -56,7 +56,7 @@ RSpec.describe Humid::LogSubscriber do
     allow(Humid.config).to receive("application_path") {
       js_path "simple.js"
     }
-    Humid.create_context
+    Humid.use_context(MiniRacer::Context.new)
     expect(Humid::LogSubscriber.runtime).to eql(0)
     Humid.render
     expect(Humid::LogSubscriber.runtime).to be > 0

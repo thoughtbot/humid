@@ -2,9 +2,11 @@
 
 ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
-Humid is a lightweight wrapper around [mini_racer] used to generate Server
-Side Rendered (SSR) pages from your js-bundling builds. While it was built
-for React, it can work with any JS function that returns a HTML string.
+Humid is a lightweight wrapper for [mini_racer] to generate Server Side
+Rendered (SSR) pages from your js-bundling builds. Inject a
+`MiniRacer::Context` instance into Humid and get rendering, instrumentation,
+logging defaults, and error handling. While it was built with React in mind, it
+can work with any JS function that returns a HTML string.
 
 ## Caution
 
@@ -27,7 +29,7 @@ yarn add source-map-support
 ```
 
 
-## Configuration
+## Setup
 
 Add an initializer to configure
 
@@ -56,14 +58,6 @@ Humid.configure do |config|
   #
   # Defaults to `Logger.new(STDOUT)`
   config.logger = Rails.logger
-
-  # Options passed to mini_racer.
-  #
-  # Defaults to empty `{}`.
-  config.context_options = {
-    timeout: 1000,
-    ensure_gc_after_idle: 2000
-  }
 end
 
 # Capybara defines its own puma config which is set up to run a single puma process
@@ -71,17 +65,27 @@ end
 if Rails.env.test?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
-  Humid.create_context
+  context = MiniRacer::Context.create(
+    timeout: 1000,
+    ensure_gc_after_idle: 2000
+  )
+
+  Humid.use_context(context)
 end
 ```
 
-Then add to your `config/puma.rb`
+Then add to your `config/puma.rb`.
 
 ```
 workers ENV.fetch("WEB_CONCURRENCY") { 1 }
 
 on_worker_boot do
-  Humid.create_context
+  context = MiniRacer::Context.create(
+    timeout: 1000,
+    ensure_gc_after_idle: 2000
+  )
+
+  Humid.use_context(context)
 end
 
 on_worker_shutdown do
@@ -156,12 +160,18 @@ Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms
 
 `mini_racer` is thread safe, but not fork safe. To use with web servers that
 employ forking, use `Humid.create_context` only on forked processes. On
-production, There should be no context created on the master process.
+production, there **should NOT BE** any mini_racer context created on the
+master process.
 
 ```ruby
 # Puma
 on_worker_boot do
-  Humid.create_context
+  context = MiniRacer::Context.create(
+    timeout: 1000,
+    ensure_gc_after_idle: 2000
+  )
+
+  Humid.use_context(context)
 end
 
 on_worker_shutdown do
