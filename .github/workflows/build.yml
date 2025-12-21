@@ -9,10 +9,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: ['3.3', '3.2', '3.1']
-        rails: ['7.0', '7.1']
+        ruby: ["3.4", "3.3", "3.2"]
+        rails: ["8.0", "8.1"]
 
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     env:
       ARUBA_TIMEOUT: 240
       BUNDLE_GEMFILE: gemfiles/rails${{ matrix.rails }}.gemfile
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'yarn'
+          cache: "yarn"
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
