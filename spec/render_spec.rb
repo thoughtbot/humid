@@ -47,10 +47,23 @@ RSpec.describe "Humid" do
 
     it "proxies to Rails logger" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+      Humid.config.logger = Logger.new($stdout)
+
       Humid.create_context
       expect(Humid.logger).to receive(:info).with("hello")
 
       Humid.context.eval("console.info('hello')")
+      Humid.config.logger = nil
+    end
+    
+    it "does not set the logger if none is configured" do
+      allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+
+      Humid.create_context
+
+      expect {
+        Humid.context.eval("console.log('hello')")
+      }.not_to raise_error
     end
   end
 

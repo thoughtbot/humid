@@ -1,4 +1,4 @@
-module Humid
+class Humid
   module ControllerRuntime
     extend ActiveSupport::Concern
 

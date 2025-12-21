@@ -54,8 +54,8 @@ Humid.configure do |config|
   # `console.log` and friends (`warn`, `error`) are delegated to
   # the respective logger levels on the ruby side.
   #
-  # Defaults to `Logger.new(STDOUT)`
-  config.logger = Rails.logger
+  # Defaults to `nil`
+  config.logger = Rails.env.development? ? Rails.logger : nil
 
   # Options passed to mini_racer.
   #

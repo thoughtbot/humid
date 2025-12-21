@@ -1,4 +1,4 @@
-module Humid
+class Humid
   class LogSubscriber < ActiveSupport::LogSubscriber
     thread_cattr_accessor :humid_runtime
 

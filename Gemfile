@@ -5,4 +5,5 @@ gemspec
 gem "rake"
 gem "rspec"
 gem "byebug"
-gem 'rails', '~> 7.0'
+gem 'rails', '~> 8.0'
+gem 'mutex_m'
