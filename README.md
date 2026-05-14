@@ -257,7 +257,6 @@ We are [available for hire][hire].
 [community]: https://thoughtbot.com/community?utm_source=github
 [hire]: https://thoughtbot.com/hire-us?utm_source=github
 
-
 <!-- END /templates/footer.md -->
 
 [mini_racer]: https://github.com/rubyjs/mini_racer
