@@ -56,6 +56,72 @@ RSpec.describe "Humid" do
       Humid.config.logger = nil
     end
     
+    it "passes multiple console args to the log_formatter" do
+      allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+      Humid.config.logger = Logger.new($stdout)
+      Humid.config.log_formatter = proc { |level, message, *rest|
+        parts = [message]
+        parts += rest.map { |a| a.is_a?(String) ? a : a.inspect }
+        parts.join("\n")
+      }
+
+      Humid.create_context
+      expect(Humid.logger).to receive(:error).with("[Error] validation failed\n{\"path\" => \"notes.0\", \"code\" => \"type\"}")
+
+      Humid.context.eval('console.error("[Error] validation failed", {path: "notes.0", code: "type"})')
+      Humid.config.logger = nil
+      Humid.config.log_formatter = nil
+    end
+
+    it "passes the log level to the log_formatter" do
+      allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+      Humid.config.logger = Logger.new($stdout)
+
+      received_level = nil
+      Humid.config.log_formatter = proc { |level, message, *rest|
+        received_level = level
+        message
+      }
+
+      Humid.create_context
+      allow(Humid.logger).to receive(:warn)
+      Humid.context.eval('console.warn("test")')
+
+      expect(received_level).to eq(:warn)
+      Humid.config.logger = nil
+      Humid.config.log_formatter = nil
+    end
+
+    it "allows log_formatter to raise errors" do
+      allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+      Humid.config.logger = Logger.new($stdout)
+      Humid.config.log_formatter = proc { |level, message, *rest|
+        raise Humid::RenderError, message if message.include?("validation failed")
+        message
+      }
+
+      Humid.create_context
+
+      expect {
+        Humid.context.eval('console.error("[Superglue] Content validation failed")')
+      }.to raise_error(Humid::RenderError, "[Superglue] Content validation failed")
+
+      Humid.config.logger = nil
+      Humid.config.log_formatter = nil
+    end
+
+    it "uses default log_formatter when none is configured" do
+      allow(Humid.config).to receive("application_path") { js_path "simple.js" }
+      Humid.config.logger = Logger.new($stdout)
+      Humid.config.log_formatter = nil
+
+      Humid.create_context
+      expect(Humid.logger).to receive(:error).with("hello")
+
+      Humid.context.eval("console.error('hello')")
+      Humid.config.logger = nil
+    end
+
     it "does not set the logger if none is configured" do
       allow(Humid.config).to receive("application_path") { js_path "simple.js" }
 

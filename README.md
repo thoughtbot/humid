@@ -123,6 +123,29 @@ The following functions are **not** available in the mini_racer environment
 `console.log` and friends (`info`, `error`, `warn`) are delegated to the
 respective methods on the configured logger.
 
+All arguments are passed through — MiniRacer converts JS objects to Ruby
+hashes and arrays automatically. A `log_formatter` proc controls how these
+arguments are formatted into a single string for the logger:
+
+```ruby
+Humid.configure do |config|
+  config.logger = Rails.logger
+
+  config.log_formatter = proc { |level, message, *rest|
+    parts = [message]
+    parts += rest.map { |a| a.is_a?(String) ? a : JSON.pretty_generate(a) }
+    parts.join("\n")
+  }
+end
+```
+
+The formatter receives `(level, message, *rest)` where:
+- `level` — the log level as a symbol (`:debug`, `:info`, `:warn`, `:error`)
+- `message` — the first argument passed to `console.log/info/warn/error`
+- `rest` — any additional arguments (objects come through as Ruby hashes/arrays)
+
+The default formatter simply returns `message` unchanged.
+
 ## Usage
 
 In your entry file, e.g, `server_rendering.js`, pass your HTML render function

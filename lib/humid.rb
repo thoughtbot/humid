@@ -20,6 +20,7 @@ class Humid
   self.config = ActiveSupport::OrderedOptions.new.merge({
     raise_render_errors: true,
     context_options: {},
+    log_formatter: proc { |_level, message, *_rest| message },
   })
 
   class << self
@@ -66,10 +67,11 @@ class Humid
       ctx = MiniRacer::Context.new(**config.context_options)
 
       if logger
-        ctx.attach("console.log", proc { |err| logger.debug(err.to_s) })
-        ctx.attach("console.info", proc { |err| logger.info(err.to_s) })
-        ctx.attach("console.error", proc { |err| logger.error(err.to_s) })
-        ctx.attach("console.warn", proc { |err| logger.warn(err.to_s) })
+        fmt = config.log_formatter || proc { |_level, message, *_rest| message }
+        ctx.attach("console.log", proc { |*args| logger.debug(fmt.call(:debug, *args)) })
+        ctx.attach("console.info", proc { |*args| logger.info(fmt.call(:info, *args)) })
+        ctx.attach("console.error", proc { |*args| logger.error(fmt.call(:error, *args)) })
+        ctx.attach("console.warn", proc { |*args| logger.warn(fmt.call(:warn, *args)) })
       end
 
       js = ""
