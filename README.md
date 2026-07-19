@@ -232,6 +232,42 @@ moving the `require` to `useEffect` in your component.
   }, [])
 ```
 
+## Telemetry
+
+Humid exposes the underlying `MiniRacer::Context` via `Humid.context`, which
+gives you access to V8 heap statistics for monitoring memory usage over time.
+
+```ruby
+Humid.context.heap_stats
+# {:total_heap_size=>3100672,
+#  :total_heap_size_executable=>4194304,
+#  :total_physical_size=>1280640,
+#  :total_available_size=>1501560832,
+#  :used_heap_size=>1205376,
+#  :heap_size_limit=>1501560832,
+#  ...}
+```
+
+You can combine humid's instrumentation and OpenTelemetry to track heap growth
+per worker:
+
+```ruby
+meter = OpenTelemetry.meter_provider.meter("humid")
+render_histogram = meter.create_histogram("humid.render.duration", unit: "ms", description: "SSR render duration")
+heap_gauge = meter.create_gauge("humid.heap.used_bytes", unit: "By", description: "V8 heap used bytes")
+
+ActiveSupport::Notifications.subscribe("render.humid") do |event|
+  stats = Humid.context.heap_stats
+  attributes = { "worker.pid" => Process.pid.to_s }
+
+  render_histogram.record(event.duration, attributes: attributes)
+  heap_gauge.record(stats[:used_heap_size], attributes: attributes)
+end
+```
+
+A steadily climbing `used_heap_size` across requests indicates a memory leak in
+your JavaScript bundle.
+
 ## Contributing
 
 Please see [CONTRIBUTING.md](/CONTRIBUTING.md).
