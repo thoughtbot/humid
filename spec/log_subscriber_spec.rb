@@ -53,12 +53,11 @@ RSpec.describe Humid::LogSubscriber do
   end
 
   it "is attached" do
-    allow(Humid.config).to receive("application_path") {
-      js_path "simple.js"
-    }
-    Humid.create_context
+    ctx = MiniRacer::Context.new
+    Humid.prepare(ctx, application_path: js_path("simple.js"))
+
     expect(Humid::LogSubscriber.runtime).to eql(0)
-    Humid.render
+    Humid.render(ctx)
     expect(Humid::LogSubscriber.runtime).to be > 0
   end
 end
