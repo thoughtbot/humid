@@ -2,15 +2,17 @@
 
 ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
-Humid is a lightweight wrapper around [mini_racer] used to generate Server
-Side Rendered (SSR) pages from your js-bundling builds. While it was built
-for React, it can work with any JS function that returns a HTML string.
+Humid is a set of helper functions for using `mini_racer` for Server Side
+Rendering (SSR). **There are only 2 public functions and a `configure` to set
+default args**. While it was built with React in mind, it can work with any JS
+function that returns an HTML string.
 
-## Caution
+## Design
 
-This project is in its early phases of development. Its interface,
-behavior, and name are likely to change drastically before a major version
-release.
+Humid is designed for the common case where all data is gathered before
+rendering. Your application fetches everything needed, passes it as props, and
+Humid returns the rendered HTML in a single synchronous call. It does not
+support streaming or async data fetching during render.
 
 ## Installation
 
@@ -26,12 +28,14 @@ For source-map support, also add
 yarn add source-map-support
 ```
 
-
 ## Configuration
 
-Add an initializer to configure
+Add an initializer to configure the default options for `Humid.render`. These
+are overridable on `Humid.render`.
 
 ```ruby
+# app/initializers/humid.rb
+
 Humid.configure do |config|
   # Path to your build file located in `app/assets/builds/`. You should use a
   # separate build apart from your `application.js`.
@@ -55,41 +59,70 @@ Humid.configure do |config|
   # the respective logger levels on the ruby side.
   #
   # Defaults to `nil`
-  config.logger = Rails.env.development? ? Rails.logger : nil
-
-  # Options passed to mini_racer.
-  #
-  # Defaults to empty `{}`.
-  config.context_options = {
-    timeout: 1000,
-    ensure_gc_after_idle: 2000
-  }
+  config.logger = Rails.env.local? ? Rails.logger : nil
 end
 
-# Capybara defines its own puma config which is set up to run a single puma process
-# with a thread pool. This ensures that a context gets created on that process.
-if Rails.env.test?
+# if Rails.env.local?
+#   # Use single_threaded mode for Spring and other forked envs.
+#   MiniRacer::Platform.set_flags! :single_threaded
+#   ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
+#   MINI_RACER_CONTEXT = Humid.prepare(ctx)
+# end
+```
+
+## Usage
+
+
+### Create the MiniRacer Context.
+
+On local development or test environments, uncomment the below.
+
+```ruby
+if Rails.env.local?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
-  Humid.create_context
+  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
+  MINI_RACER_CONTEXT = Humid.prepare(ctx)
 end
 ```
 
-Then add to your `config/puma.rb`
+On production, keep in mind that `mini_racer` is **thread safe, but not fork
+safe**. When using with web servers that employ forking, create a
+`MINI_RACER_CONTEXT` with options of your choosing **on worker boot. There
+should be no context created on the master process.**
 
-```
-workers ENV.fetch("WEB_CONCURRENCY") { 1 }
+For example with puma:
 
+```ruby
+# config/puma.rb
 on_worker_boot do
-  Humid.create_context
+  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
+  MINI_RACER_CONTEXT = Humid.prepare(ctx)
 end
 
 on_worker_shutdown do
-  Humid.dispose
+  MINI_RACER_CONTEXT.dispose
 end
 ```
 
+### Prepare the context with `Humid.prepare`
+
+`Humid.prepare` will prepare the context's environment by [removing
+functions](#functions-not-available), delegate `console.log` and friends to
+your logger, load the SSR js bundle, and add the render function.
+
+You can also override config options per-context:
+
+```ruby
+MINI_RACER_CONTEXT = Humid.prepare(
+  MiniRacer::Context.new(timeout: 1000),
+  application_path: Rails.root.join("other_bundle.js"),
+  logger: nil
+)
+```
+
 If you'd like support for source map support, you will need to
+
 1. Add the following to your entry file, e.g, `server_rendering.js`.
 2. set `config.source_map_path`.
 
@@ -103,9 +136,39 @@ require("source-map-support").install({
   }
 });
 ```
+
 A [sample] webpack.config is available for reference.
 
-## The mini_racer environment.
+### Add a renderer and call `Humid.render`
+
+In your entry file, e.g, `server_rendering.js`, pass your HTML render function
+to `setHumidRenderer`. There is no need to require the function.
+
+```javascript
+// Set a factory function that will create a new instance of our app
+// for each request.
+setHumidRenderer((json) => {
+  const initialState = JSON.parse(json)
+
+  return ReactDOMServer.renderToString(
+    <Application initialPage={initialState}/>
+  )
+})
+```
+
+And finally call `render` from ERB.
+
+```ruby
+<%= Humid.render(MINI_RACER_CONTEXT, json).html_safe %>
+```
+
+Instrumentation is included:
+
+```
+Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms)
+```
+
+## The prepared `mini_racer` environment.
 
 ### Functions not available
 
@@ -144,55 +207,10 @@ The formatter receives `(level, message, *rest)` where:
 - `message` — the first argument passed to `console.log/info/warn/error`
 - `rest` — any additional arguments (objects come through as Ruby hashes/arrays)
 
-The default formatter simply returns `message` unchanged.
-
-## Usage
-
-In your entry file, e.g, `server_rendering.js`, pass your HTML render function
-to `setHumidRenderer`. There is no need to require the function.
-
-```javascript
-// Set a factory function that will create a new instance of our app
-// for each request.
-setHumidRenderer((json) => {
-  const initialState = JSON.parse(json)
-
-  return ReactDOMServer.renderToString(
-    <Application initialPage={initialState}/>
-  )
-})
-```
-
-And finally call `render` from ERB.
-
-```ruby
-<%= Humid.render(initial_state).html_safe %>
-```
-
-Instrumentation is included:
-
-```
-Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms)
-```
-
-### Puma
-
-`mini_racer` is thread safe, but not fork safe. To use with web servers that
-employ forking, use `Humid.create_context` only on forked processes. On
-production, There should be no context created on the master process.
-
-```ruby
-# Puma
-on_worker_boot do
-  Humid.create_context
-end
-
-on_worker_shutdown do
-  Humid.dispose
-end
-```
+The default formatter returns `message` unchanged.
 
 ### Server-side libraries that detect node.js envs.
+
 You may need webpacker to create aliases for server friendly libraries that can
 not detect the `mini_racer` environment. For example, in `webpack.config.js`.
 
@@ -234,11 +252,11 @@ moving the `require` to `useEffect` in your component.
 
 ## Telemetry
 
-Humid exposes the underlying `MiniRacer::Context` via `Humid.context`, which
-gives you access to V8 heap statistics for monitoring memory usage over time.
+`Humid.prepare` returns the `MiniRacer::Context` directly, which gives you
+access to V8 heap statistics for monitoring memory usage over time.
 
 ```ruby
-Humid.context.heap_stats
+MINI_RACER_CONTEXT.heap_stats
 # {:total_heap_size=>3100672,
 #  :total_heap_size_executable=>4194304,
 #  :total_physical_size=>1280640,
@@ -257,7 +275,7 @@ render_histogram = meter.create_histogram("humid.render.duration", unit: "ms", d
 heap_gauge = meter.create_gauge("humid.heap.used_bytes", unit: "By", description: "V8 heap used bytes")
 
 ActiveSupport::Notifications.subscribe("render.humid") do |event|
-  stats = Humid.context.heap_stats
+  stats = MINI_RACER_CONTEXT.heap_stats
   attributes = { "worker.pid" => Process.pid.to_s }
 
   render_histogram.record(event.duration, attributes: attributes)
