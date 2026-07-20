@@ -3,9 +3,12 @@
 ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
 Humid is a set of helper functions for using `mini_racer` for Server Side
-Rendering (SSR). **There are only 2 public functions and a `configure` to set
-default args**. While it was built with React in mind, it can work with any JS
-function that returns an HTML string.
+Rendering (SSR). **There are only 2 pure public functions and a `configure` to set
+default args**. `mini_racer` does the heavy lifting, Humid just provides a few
+conveniences.
+
+While it was built with React in mind, it can work with any JS function that
+returns an HTML string.
 
 ## Design
 
@@ -13,6 +16,12 @@ Humid is designed for the common case where all data is gathered before
 rendering. Your application fetches everything needed, passes it as props, and
 Humid returns the rendered HTML in a single synchronous call. It does not
 support streaming or async data fetching during render.
+
+## Caution
+
+This project is in its early phases of development. Its interface,
+behavior, and name are likely to change drastically before a major version
+release.
 
 ## Installation
 
