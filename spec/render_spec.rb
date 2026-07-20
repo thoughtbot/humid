@@ -65,7 +65,8 @@ RSpec.describe "Humid" do
         log_formatter: log_formatter
       )
 
-      expect(logger).to receive(:error).with("[Error] validation failed\n{\"path\" => \"notes.0\", \"code\" => \"type\"}")
+      expected_hash = {"path" => "notes.0", "code" => "type"}.inspect
+      expect(logger).to receive(:error).with("[Error] validation failed\n#{expected_hash}")
       ctx.eval('console.error("[Error] validation failed", {path: "notes.0", code: "type"})')
     end
 
