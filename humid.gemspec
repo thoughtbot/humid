@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.email = "jho406@gmail.com"
   s.license = "MIT"
   s.homepage = "https://github.com/thoughtbot/humid/"
-  s.summary = "Javascript SSR rendering for Rails"
+  s.summary = "Javascript Server Side Rendering (SSR) for Rails"
   s.description = s.summary
   s.files = Dir["MIT-LICENSE", "README.md", "lib/**/*"]
 
