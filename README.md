@@ -137,7 +137,8 @@ require("source-map-support").install({
 });
 ```
 
-A [sample] webpack.config is available for reference.
+See the [sample server_rendering.tsx](./sample/server_rendering.tsx) to see how
+it is integrated.
 
 ### Add a renderer and call `Humid.render`
 
@@ -209,7 +210,7 @@ The formatter receives `(level, message, *rest)` where:
 
 The default formatter returns `message` unchanged.
 
-### Server-side libraries that detect node.js envs.
+## Server-side libraries that detect node.js envs.
 
 You may need webpacker to create aliases for server friendly libraries that can
 not detect the `mini_racer` environment. For example, in `webpack.config.js`.
@@ -228,7 +229,7 @@ not detect the `mini_racer` environment. For example, in `webpack.config.js`.
 [Vue has a resource][vue_ssr] on how to write universal code. Below
 are a few highlights that are important to keep in mind.
 
-### State
+## State
 
 Humid uses a single context across multiple request. To avoid state pollution, we
 provide a factory function to `setHumidRenderer` that builds a new app instance on
@@ -237,9 +238,9 @@ every call.
 This provides better isolation, but as it is still a shared context, polluting
 `global` is still possible. Be careful of modifying `global` in your code.
 
-### Missing browser APIs
+## Missing browser APIs
 
-Polyfills and some libraries that depend on browser APIs will fail in the
+Some libraries that depend on browser APIs will fail in the
 `mini_racer` environment because of missing browser APIs. Account for this by
 moving the `require` to `useEffect` in your component.
 
@@ -250,10 +251,39 @@ moving the `require` to `useEffect` in your component.
   }, [])
 ```
 
+## Polyfills
+
+React SSR may import node.js dependencies that you need to polyfill for. See
+a sample esbuild [build script](./sample/bulid_ssr.js) and a [shim.js](./sample/shim.js)
+to get around these issues.
+
+## Testing
+
+When running in test environments that also forks, you may need to set up new mini_racer
+contexts for each parallel worker. For example:
+
+```ruby
+ActiveSupport.on_load(:action_dispatch_integration_test) do
+  include ActionView::Helpers::TranslationHelper
+  include Devise::Test::IntegrationHelpers
+
+  parallelize_setup do
+    MINI_RACER_CONTEXT.dispose if defined?(MINI_RACER_CONTEXT)
+    ctx = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
+    Object.send(:remove_const, :MINI_RACER_CONTEXT) if defined?(MINI_RACER_CONTEXT)
+    Object.const_set(:MINI_RACER_CONTEXT, Humid.prepare(ctx))
+  end
+
+  parallelize_teardown do
+    MINI_RACER_CONTEXT.dispose if defined?(MINI_RACER_CONTEXT)
+  end
+end
+```
+
 ## Telemetry
 
-`Humid.prepare` returns the `MiniRacer::Context` directly, which gives you
-access to V8 heap statistics for monitoring memory usage over time.
+The `MiniRacer::Context` gives you access to V8 heap statistics for monitoring
+memory usage over time.
 
 ```ruby
 MINI_RACER_CONTEXT.heap_stats
