@@ -39,9 +39,7 @@ module Humid
       ctx.attach("console.warn", proc { |*args| logger.warn(fmt.call(:warn, *args)) })
     end
 
-    js = ""
-    js << remove_functions
-    js << renderer
+    js = remove_functions + renderer
     ctx.eval(js)
 
     source_path = effective_config.application_path
