@@ -71,22 +71,6 @@ Humid.configure do |config|
   config.logger = Rails.env.local? ? Rails.logger : nil
 end
 
-# if Rails.env.local?
-#   # Use single_threaded mode for Spring and other forked envs.
-#   MiniRacer::Platform.set_flags! :single_threaded
-#   ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
-#   MINI_RACER_CONTEXT = Humid.prepare(ctx)
-# end
-```
-
-## Usage
-
-
-### Create the MiniRacer Context.
-
-On local development or test environments, uncomment the below.
-
-```ruby
 if Rails.env.local?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
@@ -95,64 +79,14 @@ if Rails.env.local?
 end
 ```
 
-On production, keep in mind that `mini_racer` is **thread safe, but not fork
-safe**. When using with web servers that employ forking, create a
-`MINI_RACER_CONTEXT` with options of your choosing **on worker boot. There
-should be no context created on the master process.**
+## Usage
 
-For example with puma:
+### Set a renderer
 
-```ruby
-# config/puma.rb
-on_worker_boot do
-  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
-  MINI_RACER_CONTEXT = Humid.prepare(ctx)
-end
-
-on_worker_shutdown do
-  MINI_RACER_CONTEXT.dispose
-end
-```
-
-### Prepare the context with `Humid.prepare`
-
-`Humid.prepare` will prepare the context's environment by [removing
-functions](#functions-not-available), delegate `console.log` and friends to
-your logger, load the SSR js bundle, and add the render function.
-
-You can also override config options per-context:
-
-```ruby
-MINI_RACER_CONTEXT = Humid.prepare(
-  MiniRacer::Context.new(timeout: 1000),
-  application_path: Rails.root.join("other_bundle.js"),
-  logger: nil
-)
-```
-
-If you'd like support for source map support, you will need to
-
-1. Add the following to your entry file, e.g, `server_rendering.js`.
-2. set `config.source_map_path`.
-
-```javascript
-require("source-map-support").install({
-  retrieveSourceMap: filename => {
-    return {
-      url: filename,
-      map: readSourceMap(filename)
-    };
-  }
-});
-```
-
-See the [sample server_rendering.tsx](./sample/server_rendering.tsx) to see how
-it is integrated.
-
-### Add a renderer and call `Humid.render`
-
-In your entry file, e.g, `server_rendering.js`, pass your HTML render function
-to `setHumidRenderer`. There is no need to require the function.
+In your entry file, e.g, `server_rendering.js` (specified in
+`config.application_path`), pass your HTML render function to
+`setHumidRenderer`. There is no need to require the function, its included in
+the environment.
 
 ```javascript
 // Set a factory function that will create a new instance of our app
@@ -166,6 +100,60 @@ setHumidRenderer((json) => {
 })
 ```
 
+If you'd like support for source map support, you will need to add the following
+to the same file and set `config.source_map_path` like the configuration above.
+
+```javascript
+require("source-map-support").install({
+  retrieveSourceMap: filename => {
+    return {
+      url: filename,
+      map: readSourceMap(filename)
+    };
+  }
+});
+```
+
+### Your webserver
+
+On production, keep in mind that `mini_racer` is **thread safe, but not fork
+safe**. When using with web servers that employ forking, create a
+`MINI_RACER_CONTEXT` with options of your choosing on worker boot. **There
+should be no context created on the master process.**
+
+For example with puma:
+
+```ruby
+# config/puma.rb
+on_worker_boot do
+  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
+  
+  MINI_RACER_CONTEXT = Humid.prepare(ctx)
+end
+
+on_worker_shutdown do
+  MINI_RACER_CONTEXT.dispose
+end
+```
+
+`Humid.prepare` will prepare the context's
+[environment](#the-mini_racer-environment).
+
+You can also override config options per-context:
+
+```ruby
+MINI_RACER_CONTEXT = Humid.prepare(
+  MiniRacer::Context.new(timeout: 1000),
+  application_path: Rails.root.join("other_bundle.js"),
+  logger: nil
+)
+```
+
+See the [sample server_rendering.tsx](./sample/server_rendering.tsx) to see how
+it is integrated.
+
+### Call `Humid.render`
+
 And finally call `render` from ERB.
 
 ```ruby
@@ -178,7 +166,7 @@ Instrumentation is included:
 Completed 200 OK in 14ms (Views: 0.2ms | Humid SSR: 11.0ms | ActiveRecord: 2.7ms)
 ```
 
-## The prepared `mini_racer` environment.
+## The `mini_racer` environment
 
 ### Functions not available
 
