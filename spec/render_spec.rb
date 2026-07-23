@@ -145,6 +145,14 @@ RSpec.describe "Humid" do
   end
 
   describe "render" do
+    it "raises NotPrepared when context was not prepared" do
+      ctx = MiniRacer::Context.new
+
+      expect {
+        Humid.render(ctx)
+      }.to raise_error(Humid::NotPrepared)
+    end
+
     it "returns a js output" do
       ctx = MiniRacer::Context.new
       Humid.prepare(ctx, application_path: js_path("simple.js"))

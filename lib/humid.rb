@@ -13,6 +13,9 @@ module Humid
   class FileNotFound < StandardError
   end
 
+  class NotPrepared < StandardError
+  end
+
   mattr_accessor :config
 
   self.config = ActiveSupport::OrderedOptions.new.merge({
@@ -60,6 +63,9 @@ module Humid
   end
 
   def render(ctx, *args)
+    is_prepared = ctx.respond_to?(:humid_prepared?) && ctx.humid_prepared?
+    raise Humid::NotPrepared, "Context was not prepared with Humid.prepare" unless is_prepared
+
     ActiveSupport::Notifications.instrument("render.humid") do
       ctx.call("__renderer", *args)
     rescue MiniRacer::RuntimeError => e
