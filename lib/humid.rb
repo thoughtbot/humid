@@ -52,6 +52,10 @@ module Humid
     filename = File.basename(source_path.to_s)
     ctx.eval(File.read(source_path), filename: filename)
 
+    def ctx.humid_prepared?
+      true
+    end
+
     ctx
   end
 

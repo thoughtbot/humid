@@ -10,6 +10,15 @@ RSpec.describe "Humid" do
       expect(result).to equal(ctx)
     end
 
+    it "marks the context as humid_prepared" do
+      ctx = MiniRacer::Context.new
+      expect(ctx).not_to respond_to(:humid_prepared?)
+
+      Humid.prepare(ctx, application_path: js_path("simple.js"))
+
+      expect(ctx.humid_prepared?).to be true
+    end
+
     context "When the file can not be found" do
       it "raises" do
         ctx = MiniRacer::Context.new
