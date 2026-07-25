@@ -30,6 +30,8 @@ module Humid
   end
 
   def prepare(ctx, options = {})
+    return ctx if ctx.respond_to?(:humid_prepared?) && ctx.humid_prepared?
+
     effective_config = config.merge(options)
     logger = effective_config.logger
     log_formatter = effective_config.log_formatter

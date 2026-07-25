@@ -19,6 +19,16 @@ RSpec.describe "Humid" do
       expect(ctx.humid_prepared?).to be true
     end
 
+    it "is idempotent when called on an already prepared context" do
+      ctx = MiniRacer::Context.new
+      Humid.prepare(ctx, application_path: js_path("simple.js"))
+
+      expect(ctx).to receive(:eval).never
+      result = Humid.prepare(ctx, application_path: js_path("simple.js"))
+
+      expect(result).to equal(ctx)
+    end
+
     context "When the file can not be found" do
       it "raises" do
         ctx = MiniRacer::Context.new
