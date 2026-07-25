@@ -43,25 +43,25 @@ Add an initializer to configure the default options for `Humid.render`. These
 are overridable on `Humid.render`.
 
 ```ruby
-# app/initializers/humid.rb
+# config/initializers/humid.rb
 
 Humid.configure do |config|
   # Path to your build file located in `app/assets/builds/`. You should use a
   # separate build apart from your `application.js`.
   #
   # Required
-  config.application_path = Rails.root.join('app', 'assets', 'builds', 'server_rendering.js')
+  config.application_path = Rails.root.join("app/assets/builds/server_rendering.js")
 
   # Path to your source map file
   #
   # Optional
-  config.source_map_path = Rails.root.join('app', 'assets', 'builds', 'server_rendering.js.map')
+  config.source_map_path = Rails.root.join("app/assets/builds/server_rendering.js.map")
 
   # Raise errors if JS rendering failed. If false, the error will be
-  # logged out to Rails log and Humid.render will return an empty string
+  # logged and Humid.render will return an empty string.
   #
   # Defaults to true.
-  config.raise_render_errors = Rails.env.development? || Rails.env.test?
+  config.raise_render_errors = Rails.env.local?
 
   # The logger instance.
   # `console.log` and friends (`warn`, `error`) are delegated to
@@ -74,8 +74,18 @@ end
 if Rails.env.local?
   # Use single_threaded mode for Spring and other forked envs.
   MiniRacer::Platform.set_flags! :single_threaded
-  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
-  MINI_RACER_CONTEXT = Humid.prepare(ctx)
+  MINI_RACER_SSR = { context: MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000) }
+
+  # Reload the context when the SSR bundle changes
+  ssr_checker = ActiveSupport::FileUpdateChecker.new([Humid.config.application_path.to_s]) do
+    MINI_RACER_SSR[:context].dispose
+    MINI_RACER_SSR[:context] = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
+  end
+
+  Rails.application.reloaders << ssr_checker
+  Rails.application.reloader.to_run do
+    ssr_checker.execute_if_updated
+  end
 end
 ```
 
@@ -117,22 +127,20 @@ require("source-map-support").install({
 ### Your webserver
 
 On production, keep in mind that `mini_racer` is **thread safe, but not fork
-safe**. When using with web servers that employ forking, create a
-`MINI_RACER_CONTEXT` with options of your choosing on worker boot. **There
-should be no context created on the master process.**
+safe**. When using with web servers that employ forking, create the context
+on worker boot. **There should be no context created on the master process.**
 
 For example with puma:
 
 ```ruby
 # config/puma.rb
 on_worker_boot do
-  ctx = MiniRacer::Context.new(timeout: 100, ensure_gc_after_idle: 2000)
-  
-  MINI_RACER_CONTEXT = Humid.prepare(ctx)
+  ctx = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
+  MINI_RACER_SSR = { context: Humid.prepare(ctx) }
 end
 
 on_worker_shutdown do
-  MINI_RACER_CONTEXT.dispose
+  MINI_RACER_SSR[:context].dispose
 end
 ```
 
@@ -142,12 +150,16 @@ end
 You can also override config options per-context:
 
 ```ruby
-MINI_RACER_CONTEXT = Humid.prepare(
+ctx = Humid.prepare(
   MiniRacer::Context.new(timeout: 1000),
   application_path: Rails.root.join("other_bundle.js"),
   logger: nil
 )
+MINI_RACER_SSR = { context: ctx }
 ```
+
+> [!NOTE]
+> If you pass a context that was already prepared, `prepare` will noop and return the context back to you.
 
 See the [sample server_rendering.tsx](./sample/server_rendering.tsx) to see how
 it is integrated.
@@ -157,7 +169,7 @@ it is integrated.
 And finally call `render` from ERB.
 
 ```ruby
-<%= Humid.render(MINI_RACER_CONTEXT, json).html_safe %>
+<%= Humid.render(MINI_RACER_SSR[:context], json).html_safe %>
 ```
 
 Instrumentation is included:
@@ -256,23 +268,19 @@ to get around these issues.
 
 ## Testing
 
-When running in test environments that also forks, you may need to set up new mini_racer
-contexts for each parallel worker. For example:
+The snippet When running in test environments that fork (e.g., parallel tests), each
+worker needs its own context since MiniRacer is not fork-safe. Using
+`MINI_RACER_SSR` as a hash makes this straightforward:
 
 ```ruby
 ActiveSupport.on_load(:action_dispatch_integration_test) do
-  include ActionView::Helpers::TranslationHelper
-  include Devise::Test::IntegrationHelpers
-
   parallelize_setup do
-    MINI_RACER_CONTEXT.dispose if defined?(MINI_RACER_CONTEXT)
-    ctx = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
-    Object.send(:remove_const, :MINI_RACER_CONTEXT) if defined?(MINI_RACER_CONTEXT)
-    Object.const_set(:MINI_RACER_CONTEXT, Humid.prepare(ctx))
+    MINI_RACER_SSR[:context].dispose
+    MINI_RACER_SSR[:context] = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
   end
 
   parallelize_teardown do
-    MINI_RACER_CONTEXT.dispose if defined?(MINI_RACER_CONTEXT)
+    MINI_RACER_SSR[:context].dispose
   end
 end
 ```
@@ -283,7 +291,7 @@ The `MiniRacer::Context` gives you access to V8 heap statistics for monitoring
 memory usage over time.
 
 ```ruby
-MINI_RACER_CONTEXT.heap_stats
+MINI_RACER_SSR[:context].heap_stats
 # {:total_heap_size=>3100672,
 #  :total_heap_size_executable=>4194304,
 #  :total_physical_size=>1280640,
@@ -302,7 +310,7 @@ render_histogram = meter.create_histogram("humid.render.duration", unit: "ms", d
 heap_gauge = meter.create_gauge("humid.heap.used_bytes", unit: "By", description: "V8 heap used bytes")
 
 ActiveSupport::Notifications.subscribe("render.humid") do |event|
-  stats = MINI_RACER_CONTEXT.heap_stats
+  stats = MINI_RACER_SSR[:context].heap_stats
   attributes = { "worker.pid" => Process.pid.to_s }
 
   render_histogram.record(event.duration, attributes: attributes)
