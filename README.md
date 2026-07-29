@@ -1,7 +1,8 @@
 <div align="center">
   <img src="./images/svg/humid-icon.svg" alt="Humid" width="128" />
   <h1>Humid</h1>
-  <p>Helper methods and telemetry for React server side rendering with <a href="https://github.com/rubyjs/mini_racer">mini_racer</a></p>
+  <p>A few helper functions for Javascript server-side rendering on Rails with <a
+  href="https://github.com/rubyjs/mini_racer">mini_racer</a></p>
 </div>
 
 ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
