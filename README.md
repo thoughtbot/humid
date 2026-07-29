@@ -1,8 +1,10 @@
 <div align="center">
   <img src="./images/svg/humid-icon.svg" alt="Humid" width="128" />
   <h1>Humid</h1>
-  ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
+  <p>Helper methods and telemetry for React server side rendering with <a href="https://github.com/rubyjs/mini_racer">mini_racer</a></p>
 </div>
+
+![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
 Humid is a set of helper functions for using `mini_racer` for Server Side
 Rendering (SSR). **There are only 2 pure public functions and a `configure` to set
