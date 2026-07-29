@@ -1,4 +1,9 @@
-# Humid
+<div align="center">
+  <img src="./images/svg/humid-icon.svg" alt="Humid" width="128" />
+  <h1>Humid</h1>
+  <p>A few helper functions for Javascript server-side rendering on Rails with <a
+  href="https://github.com/rubyjs/mini_racer">mini_racer</a></p>
+</div>
 
 ![Build Status](https://github.com/thoughtbot/humid/actions/workflows/build.yml/badge.svg?branch=main)
 
@@ -12,16 +17,17 @@ returns an HTML string.
 
 ## Design
 
-Humid is designed for the common case where all data is gathered before
-rendering. Your application fetches everything needed, passes it as props, and
-Humid returns the rendered HTML in a single synchronous call. It does not
-support streaming or async data fetching during render.
+Humid is designed with 2 goals in mind:
 
-## Caution
+1. Its for the common case where all data is gathered before rendering. Your
+application fetches everything needed, passes it as props, and Humid returns
+the rendered HTML in a single synchronous call. It does not support streaming
+or async data fetching during render.
 
-This project is in its early phases of development. Its interface,
-behavior, and name are likely to change drastically before a major version
-release.
+2. Its a stepping stone for when you want to scale on the edge using
+[Cloudflare V8 isolates](https://developers.cloudflare.com/workers/reference/how-workers-works/)
+.`mini_racer` is a bare V8 environment, if your JS bundle works with
+`mini_racer`, it'll work on Cloudflare V8 isolates.
 
 ## Installation
 
@@ -72,7 +78,8 @@ Humid.configure do |config|
 end
 
 if Rails.env.local?
-  # Use single_threaded mode for Spring and other forked envs.
+  # Use single_threaded mode for dev and test environments.
+  # This will also work for mini_test parallel tests
   MiniRacer::Platform.set_flags! :single_threaded
   MINI_RACER_SSR = { context: MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000) }
 
@@ -266,25 +273,6 @@ React SSR may import node.js dependencies that you need to polyfill for. See
 a sample esbuild [build script](./sample/bulid_ssr.js) and a [shim.js](./sample/shim.js)
 to get around these issues.
 
-## Testing
-
-The snippet When running in test environments that fork (e.g., parallel tests), each
-worker needs its own context since MiniRacer is not fork-safe. Using
-`MINI_RACER_SSR` as a hash makes this straightforward:
-
-```ruby
-ActiveSupport.on_load(:action_dispatch_integration_test) do
-  parallelize_setup do
-    MINI_RACER_SSR[:context].dispose
-    MINI_RACER_SSR[:context] = MiniRacer::Context.new(timeout: 1000, ensure_gc_after_idle: 2000)
-  end
-
-  parallelize_teardown do
-    MINI_RACER_SSR[:context].dispose
-  end
-end
-```
-
 ## Telemetry
 
 The `MiniRacer::Context` gives you access to V8 heap statistics for monitoring
@@ -320,6 +308,7 @@ end
 
 A steadily climbing `used_heap_size` across requests indicates a memory leak in
 your JavaScript bundle.
+
 
 ## Contributing
 
