@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./images/svg/humid-icon.svg" alt="Humid" width="128" />
   <h1>Humid</h1>
-  <p>A few helper functions for Javascript server-side rendering on Rails with <a
+  <p>A few helpers for Javascript server-side rendering on Rails with <a
   href="https://github.com/rubyjs/mini_racer">mini_racer</a></p>
 </div>
 
@@ -28,6 +28,9 @@ or async data fetching during render.
 [Cloudflare V8 isolates](https://developers.cloudflare.com/workers/reference/how-workers-works/)
 .`mini_racer` is a bare V8 environment, if your JS bundle works with
 `mini_racer`, it'll work on Cloudflare V8 isolates.
+
+> [!NOTE]
+> See the [sample](./sample/) for a complete working example.
 
 ## Installation
 
@@ -168,9 +171,6 @@ MINI_RACER_SSR = { context: ctx }
 > [!NOTE]
 > If you pass a context that was already prepared, `prepare` will noop and return the context back to you.
 
-See the [sample server_rendering.tsx](./sample/server_rendering.tsx) to see how
-it is integrated.
-
 ### Call `Humid.render`
 
 And finally call `render` from ERB.
@@ -228,17 +228,19 @@ The default formatter returns `message` unchanged.
 
 ## Server-side libraries that detect node.js envs.
 
-You may need webpacker to create aliases for server friendly libraries that can
-not detect the `mini_racer` environment. For example, in `webpack.config.js`.
+Some libraries check for Node.js or browser globals to decide which code path
+to use. In `mini_racer`, neither environment is detected. You may need to
+configure your bundler to alias server-friendly versions. For example, in
+esbuild:
 
-```diff
-...
-  resolve: {
-    alias: {
-      'html-dom-parser': path.resolve(__dirname, '../../node_modules/html-dom-parser/lib/html-to-dom-server')
-    }
+```js
+// build_ssr.mjs
+await esbuild.build({
+  // ...
+  alias: {
+    'html-dom-parser': 'html-dom-parser/lib/html-to-dom-server'
   }
-...
+})
 ```
 
 ## Writing universal code
@@ -270,7 +272,7 @@ moving the `require` to `useEffect` in your component.
 ## Polyfills
 
 React SSR may import node.js dependencies that you need to polyfill for. See
-a sample esbuild [build script](./sample/bulid_ssr.js) and a [shim.js](./sample/shim.js)
+a sample esbuild [build script](./sample/build.mjs) and a [shim.js](./sample/shim.js)
 to get around these issues.
 
 ## Telemetry
@@ -316,7 +318,7 @@ Please see [CONTRIBUTING.md](/CONTRIBUTING.md).
 
 ## License
 
-Humid is Copyright © 2021-2024 Johny Ho.
+Humid is Copyright © 2021-2026 Johny Ho.
 It is free software, and may be redistributed under the terms specified in the
 [LICENSE](/LICENSE.md) file.
 
@@ -339,4 +341,4 @@ We are [available for hire][hire].
 
 [mini_racer]: https://github.com/rubyjs/mini_racer
 [vue_ssr]: https://ssr.vuejs.org/
-[sample]: ./webpack.config.js
+[sample]: ./sample/
