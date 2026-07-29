@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="tile"><rect width="512" height="512" rx="117" ry="117"></rect></clipPath>
+    <pattern id="repp" patternUnits="userSpaceOnUse" width="405.33" height="405.33" patternTransform="rotate(-25)">
+      <rect width="405.33" height="405.33" fill="#1b2a5c"></rect>
+      <rect width="85.33" height="405.33" fill="#f2358f"></rect>
+      <rect x="192" width="64" height="405.33" fill="#d9a521"></rect>
+    </pattern>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#repp)"></rect>
+    <g fill="none" stroke="#f5f1e6" stroke-width="6.5" stroke-linecap="round" transform="translate(96,96) scale(6.9565)"><path d="M23 40C14 29 32 21 23 8"></path></g>
+  </g>
+</svg>
