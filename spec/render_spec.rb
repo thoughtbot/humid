@@ -180,7 +180,7 @@ RSpec.describe "Humid" do
     end
 
     it "can use source maps to see errors" do
-      system("yarn run build")
+      system("npm run build", chdir: "spec/testapp")
       ctx = MiniRacer::Context.new
       Humid.prepare(ctx,
         application_path: build_path("reporting.js"),
@@ -193,8 +193,9 @@ RSpec.describe "Humid" do
         expect(error).to be_a(Humid::RenderError)
         message = <<~MSG
           Error: ^^ Look! These stack traces map to the actual source code :)
-          JavaScript at throwSomeError (/webpack:/spec/testapp/app/assets/javascript/components/error-causing-component.js:2:9)
-          JavaScript at /webpack:/spec/testapp/app/assets/javascript/components/error-causing-component.js:8:3
+          JavaScript at throwSomeError (/javascript/components/error-causing-component.js:2:9)
+          JavaScript at ErrorCausingComponent (/javascript/components/error-causing-component.js:8:3)
+          JavaScript at /javascript/reporting.js:18:3
         MSG
 
         expect(error.message).to eql message.strip

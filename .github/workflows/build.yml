@@ -19,17 +19,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: "yarn"
+          node-version: 22
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
       - name: Setup project
         run: |
-          npm install -g yarn
-          yarn install
+          cd spec/testapp && npm install && cd ../..
           bundle install
       - name: Run test
         run: bundle exec rspec
