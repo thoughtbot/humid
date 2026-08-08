@@ -1,0 +1,3 @@
+node_modules/
+dist/globals.js
+package-lock.json

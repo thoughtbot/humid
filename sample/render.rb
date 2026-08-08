@@ -5,6 +5,7 @@ require "humid"
 greeting = ARGV[0] || "World"
 
 Humid.configure do |config|
+  config.prepend = File.expand_path("shim.js", __dir__)
   config.application_path = File.expand_path("build/app.js", __dir__)
   config.raise_render_errors = true
 end

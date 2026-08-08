@@ -44,6 +44,11 @@ module Humid
       ctx.attach("console.warn", proc { |*args| logger.warn(fmt.call(:warn, *args)) })
     end
 
+    prepend_path = effective_config.prepend
+    if prepend_path
+      ctx.eval(File.read(prepend_path))
+    end
+
     js = remove_functions + renderer
     ctx.eval(js)
 

@@ -5,6 +5,5 @@ await esbuild.build({
   bundle: true,
   platform: 'browser',
   outfile: 'build/app.js',
-  inject: ['./shim.js'],
   logLevel: 'info',
 })

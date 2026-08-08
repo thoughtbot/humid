@@ -19,6 +19,53 @@ RSpec.describe "Humid" do
       expect(ctx.humid_prepared?).to be true
     end
 
+    it "evals prepend file before the application bundle" do
+      ctx = MiniRacer::Context.new
+      Humid.prepare(ctx,
+        application_path: js_path("simple.js"),
+        prepend: js_path("humid_shim.js")
+      )
+
+      expect(ctx.eval("typeof globalThis.TextEncoder")).to eq("function")
+      expect(ctx.eval("typeof globalThis.URL")).to eq("function")
+      expect(ctx.eval("typeof globalThis.MessageChannel")).to eq("function")
+      expect(ctx.eval("typeof globalThis.navigator")).to eq("object")
+    end
+
+    it "uses prepend from config when not passed as option" do
+      Humid.config.prepend = js_path("humid_shim.js")
+      ctx = MiniRacer::Context.new
+      Humid.prepare(ctx, application_path: js_path("simple.js"))
+
+      expect(ctx.eval("typeof globalThis.TextEncoder")).to eq("function")
+      expect(ctx.eval("typeof globalThis.URL")).to eq("function")
+
+      Humid.config.delete(:prepend)
+    end
+
+    it "overrides config prepend with option" do
+      Humid.config.prepend = "/nonexistent/path.js"
+      ctx = MiniRacer::Context.new
+
+      expect {
+        Humid.prepare(ctx,
+          application_path: js_path("simple.js"),
+          prepend: js_path("humid_shim.js")
+        )
+      }.not_to raise_error
+
+      expect(ctx.eval("typeof globalThis.TextEncoder")).to eq("function")
+
+      Humid.config.delete(:prepend)
+    end
+
+    it "skips prepend when not configured" do
+      ctx = MiniRacer::Context.new
+      Humid.prepare(ctx, application_path: js_path("simple.js"))
+
+      expect(ctx.eval("typeof globalThis.TextEncoder")).to eq("undefined")
+    end
+
     it "is idempotent when called on an already prepared context" do
       ctx = MiniRacer::Context.new
       Humid.prepare(ctx, application_path: js_path("simple.js"))

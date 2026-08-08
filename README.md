@@ -78,6 +78,13 @@ Humid.configure do |config|
   #
   # Defaults to `nil`
   config.logger = Rails.env.local? ? Rails.logger : nil
+
+  # Path to a JavaScript file to eval into the MiniRacer context
+  # before the application bundle. Use this to provide globals that
+  # bare V8 doesn't have (TextEncoder, URL, MessageChannel, etc.).
+  #
+  # Optional. Defaults to nil (no prepend).
+  # config.prepend = Rails.root.join("path/to/shim.js")
 end
 
 if Rails.env.local?
@@ -269,11 +276,44 @@ moving the `require` to `useEffect` in your component.
   }, [])
 ```
 
-## Polyfills
+## MiniRacer Shim
 
-React SSR may import node.js dependencies that you need to polyfill for. See
-a sample esbuild [build script](./sample/build.mjs) and a [shim.js](./sample/shim.js)
-to get around these issues.
+MiniRacer runs bare V8 — no browser APIs, no Node APIs. React SSR and
+libraries like `whatwg-url` expect globals that don't exist. Humid ships
+a pre-built shim in [`shim/dist/shim.js`](./shim/) that provides:
+
+- **TextEncoder / TextDecoder** — real implementation from `text-encoding`
+  (not stubs — `whatwg-url` needs them to actually encode strings)
+- **URL / URLSearchParams** — from `whatwg-url`
+- **MessageChannel** — stub (React's scheduler references it)
+- **navigator** — stub with `language: 'en-us'`
+- **source-map-support** — rewrites JS stack traces using source maps,
+  so Humid errors show original filenames and line numbers
+  (`app/views/posts/show.html.tsx:42`) instead of bundled positions
+  (`server_rendering.js:12345`)
+
+Use it with the `prepend` config option:
+
+```ruby
+Humid.configure do |config|
+  config.prepend = Rails.root.join("path/to/shim.js")
+end
+```
+
+The shim is eval'd into the MiniRacer context before your SSR bundle,
+so all globals are available when your code initializes.
+
+To rebuild the shim (e.g., after updating dependencies):
+
+```sh
+cd shim
+npm install
+npm run build
+# outputs shim/dist/shim.js
+```
+
+See the [shim README](./shim/README.md) for details on the two-stage
+build process.
 
 ## Telemetry
 

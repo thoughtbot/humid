@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25",
+    "esbuild-plugin-polyfill-node": "^0.3",
+    "source-map-support": "^0.5",
+    "text-encoding": "^0.7",
+    "whatwg-url": "^14"
+  }
+}

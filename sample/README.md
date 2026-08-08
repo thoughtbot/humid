@@ -23,6 +23,6 @@ bundle exec ruby render.rb Superglue
 ## How it works
 
 1. `app.jsx` — a React component and a `setHumidRenderer` call that renders it to HTML
-2. `shim.js` — stubs for browser/Node globals that MiniRacer's V8 doesn't have
-3. `build.mjs` — esbuild bundles `app.jsx` with the shim into `build/app.js`
-4. `render.rb` — configures Humid, prepares a MiniRacer context, and calls `Humid.render` with JSON props
+2. `shim.js` — pre-built globals for MiniRacer's bare V8 (TextEncoder, URL, MessageChannel, etc.). Generated from `../shim/` — run `cd ../shim && npm install && npm run build` to rebuild.
+3. `build.mjs` — esbuild bundles `app.jsx` into `build/app.js`
+4. `render.rb` — configures Humid with `prepend: shim.js`, prepares a MiniRacer context, and calls `Humid.render` with JSON props
